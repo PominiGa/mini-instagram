@@ -1,13 +1,14 @@
 import { Request, Response } from "express";
 import userService from "../service/userService";
+import { AuthRequest } from "../Middleware/authMiddleware";
 
 class UserController {
 
-    getUsers(req: Request, res: Response) {
+    getUsers(req: AuthRequest, res: Response) {
         return res.json(userService.obterUsers());
     }
 
-    getUserById(req: Request, res: Response) {
+    getUserById(req: AuthRequest, res: Response) {
         const user = userService.obterUserPorId(Number(req.params.id));
 
         if (!user) {
@@ -17,20 +18,15 @@ class UserController {
         return res.json(user);
     }
 
-    createUser(req: Request, res: Response) {
-        const { nome, email, senha } = req.body;
+    deleteUser(req: AuthRequest, res: Response) {
+        const userId = req.userId;
+        const { id } = req.params;
 
-        if (!nome) {
-            return res.status(400).json({ mensagem: "Nome é obrigatório" });
+        if (Number(id) !== userId) {
+            return res.status(403).json({ mensagem: "Sem permissão" });
         }
 
-        const user = userService.criarUser(nome, email, senha);
-
-        return res.status(201).json(user);
-    }
-
-    deleteUser(req: Request, res: Response) {
-        const deleted = userService.deletarUser(Number(req.params.id));
+        const deleted = userService.deletarUser(Number(id));
 
         if (!deleted) {
             return res.status(404).json({ mensagem: "Usuário não encontrado" });
@@ -39,30 +35,30 @@ class UserController {
         return res.json({ mensagem: "Usuário deletado" });
     }
 
-    followUser(req: Request, res: Response) {
+    followUser(req: AuthRequest, res: Response) {
+        const userId = req.userId;
         const { id } = req.params;
-        const { userId } = req.body;
 
-        const success = userService.seguirUsuario(Number(userId), Number(id));
+        const success = userService.seguirUsuario(userId!, Number(id));
 
         if (!success) {
-            return res.status(400).json({ mensagem: "Não foi possível seguir" });
+            return res.status(400).json({ mensagem: "Erro ao seguir" });
         }
 
-        return res.json({ mensagem: "Agora você está seguindo esse usuário" });
+        return res.json({ mensagem: "Seguindo usuário" });
     }
 
-    unfollowUser(req: Request, res: Response) {
+    unfollowUser(req: AuthRequest, res: Response) {
+        const userId = req.userId;
         const { id } = req.params;
-        const { userId } = req.body;
 
-        const success = userService.deixarDeSeguir(Number(userId), Number(id));
+        const success = userService.deixarDeSeguir(userId!, Number(id));
 
         if (!success) {
-            return res.status(400).json({ mensagem: "Não foi possível deixar de seguir" });
+            return res.status(400).json({ mensagem: "Erro ao deixar de seguir" });
         }
 
-        return res.json({ mensagem: "Você deixou de seguir esse usuário" });
+        return res.json({ mensagem: "Deixou de seguir" });
     }
 }
 
